@@ -69,19 +69,26 @@ fn main() {
 
 // # String literal
 // t_STRING = r'\"([^\\\n]|(\\.))*?\"'
-    let value = "right11=2211;\naaass=222uiii".to_string();
+    let value = "right11=2211;\n
+    
+    aaass=222uiii".to_string();
+    let value = "1 + (-1+(2+3))*3".to_string();
+    let value = "function xx() end".to_string();
     let xx = Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap();
     println!("======={:?}", xx.shortest_match_at(&value, 5));
 
     let mut lex = Lexer::new(value);
+    lex.add_hash_match("function", "end");
+    
     lex.add_regex("id", Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap());
+
     lex.add_regex("equal", Regex::new(r"=").unwrap());
+    
     lex.add_regex("end", Regex::new(r";").unwrap());
     lex.add_regex("line", Regex::new(r"\n").unwrap());
     lex.add_regex("num", Regex::new(r"\d+([uU]|[lL]|[uU][lL]|[lL][uU])?").unwrap());
 
-    while let Some(token) = lex.get_token() {
-        println!("token = {:?}", token);
-    }
+    lex.parser();
+
     println!("Hello, world!");
 }

@@ -2,30 +2,33 @@ use std::{ops::BitAnd, sync::Arc, collections::HashMap};
 use regex::Regex;
 use std::fmt::Debug;
 
-#[derive(Clone, Eq, PartialEq, Hash)]
+use crate::{Handler, LangAny};
+
+#[derive(Clone)]
 pub struct LexToken {
     pub ty: &'static str,
-    pub value: Arc<String>,
+    pub data: Arc<String>,
     pub lineno: usize,
     pub start: usize,
     pub end: usize,
     pub subs: Vec<LexToken>,
+    pub value: LangAny,
 }
 
 impl Debug for LexToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let val = self.value.get(self.start..self.end).unwrap();
-        f.debug_struct("LexToken").field("ty", &self.ty).field("value", &val).field("lineno", &self.lineno).field("start", &self.start).field("end", &self.end).field("subs", &self.subs).finish()
+        let val = self.data.get(self.start..self.end).unwrap();
+        f.debug_struct("LexToken").field("ty", &self.ty).field("value", &val).field("lineno", &self.lineno).field("start", &self.start).field("end", &self.end).field("subs", &self.subs).field("value", &self.value).finish()
     }
 }
 
 impl LexToken {
     pub fn get_value(&self) -> &str {
-        self.value.get(self.start..self.end).unwrap()
+        self.data.get(self.start..self.end).unwrap()
     }
 
-    pub fn clone_base_token(&self) -> &str {
-        self.value.get(self.start..self.end).unwrap()
+    pub fn clone_base_token(&self) -> LexToken {
+        LexToken { ty: self.ty, data: self.data.clone(), lineno: self.lineno, start: self.start, end: self.end, subs: vec![], value: LangAny::Unknow }
     }
 }
 
@@ -57,42 +60,61 @@ pub struct LexRegex {
 }
 
 #[derive(Clone, Debug)]
-pub struct Lexer {
+pub struct Lexer<H>
+where H: Handler {
     pub res: Vec<LexRegex>,
     pub data: Arc<String>,
     pub tokenstack: Vec<LexToken>,
-    pub wait_types: Vec<&'static str>,
+    pub wait_token: Vec<LexToken>,
     pub pos: usize,
     pub len: usize,
+    pub handler: H,
     pub ignore: &'static str,
     pub literals: &'static str,
-    pub hash_matchs: HashMap<&'static str, &'static str>,
+    pub hash_matchs: HashMap<(&'static str, &'static str), &'static str>,
 }
 
-impl Default for Lexer {
-    fn default() -> Self { 
+// impl Default for Lexer<DefaultHandler> {
+//     fn default() -> Self { 
+//         Lexer {
+//             res: vec![],
+//             data: Arc::new(String::new()),
+//             tokenstack: vec![],
+//             wait_token: vec![],
+//             pos: 0,
+//             len: 0,
+//             handler: DefaultHandler {},
+//             ignore: " \t",
+//             literals: "+-*/%^<>=!?()[]{}.,;:",
+//             hash_matchs: HashMap::from([
+//                 (("lit", "("), ")"),
+//                 (("lit", "{"), "}"),
+//                 (("lit", "["), "]"),
+//             ]),
+//         }
+//      }
+// }
+
+impl<H> Lexer<H> where H: Handler {
+    pub fn new(data: String, handler: H) -> Lexer<H> {
         Lexer {
             res: vec![],
-            data: Arc::new(String::new()),
+            data: Arc::new(data),
             tokenstack: vec![],
-            wait_types: vec![],
+            wait_token: vec![],
             pos: 0,
             len: 0,
+            handler: handler,
             ignore: " \t",
             literals: "+-*/%^<>=!?()[]{}.,;:",
             hash_matchs: HashMap::from([
-                ("(", ")"),
-                ("{", "}"),
-                ("[", "]"),
+                (("lit", "("), ")"),
+                (("lit", "{"), "}"),
+                (("lit", "["), "]"),
             ]),
         }
-     }
-}
 
-impl Lexer {
-
-    pub fn new(data: String) -> Lexer {
-        Lexer {  len: data.len(), data: Arc::new(data), ..Default::default() }
+        // Lexer {  len: data.len(), data: Arc::new(data), handler, ..Default::default() }
     }
 
     pub fn add_regex(&mut self, ty: &'static str, re: Regex) {
@@ -102,8 +124,8 @@ impl Lexer {
         self.res.push(reg);
     }
 
-    pub fn add_hash_match(&mut self, start: &'static str, end: &'static str, ) {
-        self.hash_matchs.insert(start, end);
+    pub fn add_hash_match(&mut self, ty: &'static str, start: &'static str, end: &'static str, ) {
+        self.hash_matchs.insert((ty, start), end);
     }
 
     pub fn get_next_pos(&self, ori: usize) -> Option<usize> {
@@ -153,12 +175,13 @@ impl Lexer {
             if let Some(lpos) = self.literals.find(val) {
                 self.pos = pos.unwrap();
                 return Some(LexToken {
-                    ty: &self.literals[lpos..lpos+1],
-                    value: self.data.clone(),
+                    ty: "lit",
+                    data: self.data.clone(),
                     lineno: self.get_now_lineno(ori),
                     start: ori,
                     end: pos.unwrap(),
                     subs: vec![],
+                    value: LangAny::Unknow,
                 })
             }
 
@@ -170,11 +193,12 @@ impl Lexer {
                     self.pos = p.end();
                     return Some(LexToken {
                         ty: re.ty,
-                        value: self.data.clone(),
+                        data: self.data.clone(),
                         lineno: self.get_now_lineno(ori),
                         start: p.start(),
                         end: p.end(),
                         subs: vec![],
+                        value: LangAny::Unknow,
                     })
                 }
             }
@@ -184,26 +208,35 @@ impl Lexer {
         }
     }
 
+    pub fn read_token(&mut self, token: &mut LexToken) {
+        token.value = self.handler.on_read(token);
+    }
+
     pub fn parser(&mut self) {
         self.tokenstack = vec![];
-        while let Some(token) = self.get_token() {
+        while let Some(mut token) = self.get_token() {
             println!("token = {:?}", self.hash_matchs);
 
             println!("token = {:?} 11 = {} match = {}", token, token.ty == "id", token.get_value());
 
-            println!("token = {:?} match = {}", token, token.ty == "id" && self.hash_matchs.contains_key(token.get_value()));
-
-            if self.hash_matchs.contains_key(token.ty) {
-                self.wait_types.push(self.hash_matchs[token.ty]);
-            } else if token.ty == "id" && self.hash_matchs.contains_key(token.get_value()) {
-                self.wait_types.push(self.hash_matchs[token.get_value()]);
+            // println!("token = {:?} match = {}", token, token.ty == "id" && self.hash_matchs.contains_key(token.get_value()));
+            self.read_token(&mut token);
+            if self.hash_matchs.contains_key(&(token.ty, token.get_value())) {
+                self.wait_token.push(token.clone_base_token());
             } else {
-                if self.wait_types.len() > 0 {
-                    let is_wait = self.wait_types.last().unwrap() == &token.ty;
+                if self.wait_token.len() > 0 {
+                    let same_type = {
+                        let last = self.wait_token.last().unwrap();
+                        if last.ty != token.ty {
+                            false
+                        } else {
+                            self.hash_matchs.get(&(last.ty, last.get_value())) == Some(&token.get_value())
+                        }
+                    };
                     self.tokenstack.last_mut().unwrap().subs.push(token);
-                    if is_wait {
-                        self.wait_types.pop();
-                        if self.wait_types.len() > 0 {
+                    if same_type {
+                        self.wait_token.pop();
+                        if self.wait_token.len() > 0 {
                             let last_group = self.tokenstack.pop().unwrap();
                             self.tokenstack.last_mut().unwrap().subs.push(last_group);
                         }
@@ -215,9 +248,8 @@ impl Lexer {
             self.tokenstack.push(token);
         }
 
-        if self.wait_types.len() > 0 {
-            println!("error!!!!!!!!!!!!!! = {:?}", self.wait_types);
-
+        if self.wait_token.len() > 0 {
+            println!("error!!!!!!!!!!!!!! = {:?}", self.wait_token);
         }
         println!("self.tokenstack = {:?}", self.tokenstack);
     }

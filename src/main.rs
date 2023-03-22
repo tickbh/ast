@@ -1,7 +1,23 @@
 extern crate lang_ast;
 
-use lang_ast::Lexer;
+use std::str::FromStr;
+use lang_ast::{Lexer, Handler, LangAny, LexToken};
 use regex::Regex;
+
+struct CalcHandler;
+impl Handler for CalcHandler {
+    fn on_read(&mut self, _token: &mut LexToken) -> LangAny {
+        println!("token = {:?}", _token);
+        match _token.ty {
+            "num" => {
+                LangAny::I64(i64::from_str(_token.get_value()).unwrap()) 
+            },
+            _ => {
+                LangAny::Unsport
+            }
+        }
+    }
+}
 fn main() {
     // let value = "\"1+1\"我是中".to_string();
     // println!("string size = {}", value.len());
@@ -73,13 +89,13 @@ fn main() {
     
     aaass=222uiii".to_string();
     let value = "1 + (-1+(2+3))*3".to_string();
-    let value = "function xx() end".to_string();
+    // let value = "function xx() end".to_string();
     let xx = Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap();
     println!("======={:?}", xx.shortest_match_at(&value, 5));
 
-    let mut lex = Lexer::new(value);
-    lex.add_hash_match("function", "end");
-    
+    let mut lex = Lexer::new(value, CalcHandler{});
+    lex.add_hash_match("id", "function", "end");
+
     lex.add_regex("id", Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap());
 
     lex.add_regex("equal", Regex::new(r"=").unwrap());

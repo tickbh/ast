@@ -1,19 +1,19 @@
 extern crate lang_ast;
 
 use std::str::FromStr;
-use lang_ast::{Lexer, Handler, LangAny, LexToken};
+use lang_ast::{Lexer, Handler, AstAny, LexToken, AstResult};
 use regex::Regex;
 
 struct CalcHandler;
 impl Handler for CalcHandler {
-    fn on_read(&mut self, _token: &mut LexToken) -> LangAny {
+    fn on_read(&mut self, _token: &mut LexToken) -> AstResult<AstAny> {
         println!("token = {:?}", _token);
         match _token.ty {
             "num" => {
-                LangAny::I64(i64::from_str(_token.get_value()).unwrap()) 
+                Ok(AstAny::I64(i64::from_str(_token.get_value())?))
             },
             _ => {
-                LangAny::Unsport
+                Ok(AstAny::Unsport)
             }
         }
     }
@@ -104,7 +104,6 @@ fn main() {
     lex.add_regex("line", Regex::new(r"\n").unwrap());
     lex.add_regex("num", Regex::new(r"\d+([uU]|[lL]|[uU][lL]|[lL][uU])?").unwrap());
 
-    lex.parser();
-
-    println!("Hello, world!");
+    let result = lex.parser();
+    println!("Hello, world! {:?}", result);
 }

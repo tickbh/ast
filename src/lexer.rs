@@ -2,7 +2,7 @@ use std::{ops::BitAnd, sync::Arc, collections::HashMap};
 use regex::Regex;
 use std::fmt::Debug;
 
-use crate::{Handler, LangAny};
+use crate::{Handler, AstAny, AstResult, AstError};
 
 #[derive(Clone)]
 pub struct LexToken {
@@ -12,7 +12,7 @@ pub struct LexToken {
     pub start: usize,
     pub end: usize,
     pub subs: Vec<LexToken>,
-    pub value: LangAny,
+    pub value: AstAny,
 }
 
 impl Debug for LexToken {
@@ -28,7 +28,7 @@ impl LexToken {
     }
 
     pub fn clone_base_token(&self) -> LexToken {
-        LexToken { ty: self.ty, data: self.data.clone(), lineno: self.lineno, start: self.start, end: self.end, subs: vec![], value: LangAny::Unknow }
+        LexToken { ty: self.ty, data: self.data.clone(), lineno: self.lineno, start: self.start, end: self.end, subs: vec![], value: AstAny::Unknow }
     }
 }
 
@@ -181,7 +181,7 @@ impl<H> Lexer<H> where H: Handler {
                     start: ori,
                     end: pos.unwrap(),
                     subs: vec![],
-                    value: LangAny::Unknow,
+                    value: AstAny::Unknow,
                 })
             }
 
@@ -198,7 +198,7 @@ impl<H> Lexer<H> where H: Handler {
                         start: p.start(),
                         end: p.end(),
                         subs: vec![],
-                        value: LangAny::Unknow,
+                        value: AstAny::Unknow,
                     })
                 }
             }
@@ -208,11 +208,12 @@ impl<H> Lexer<H> where H: Handler {
         }
     }
 
-    pub fn read_token(&mut self, token: &mut LexToken) {
-        token.value = self.handler.on_read(token);
+    pub fn read_token(&mut self, token: &mut LexToken) -> AstResult<()> {
+        token.value = self.handler.on_read(token)?;
+        Ok(())
     }
 
-    pub fn parser(&mut self) {
+    pub fn parser(&mut self) -> AstResult<()> {
         self.tokenstack = vec![];
         while let Some(mut token) = self.get_token() {
             println!("token = {:?}", self.hash_matchs);
@@ -220,7 +221,7 @@ impl<H> Lexer<H> where H: Handler {
             println!("token = {:?} 11 = {} match = {}", token, token.ty == "id", token.get_value());
 
             // println!("token = {:?} match = {}", token, token.ty == "id" && self.hash_matchs.contains_key(token.get_value()));
-            self.read_token(&mut token);
+            self.read_token(&mut token)?;
             if self.hash_matchs.contains_key(&(token.ty, token.get_value())) {
                 self.wait_token.push(token.clone_base_token());
             } else {
@@ -250,7 +251,9 @@ impl<H> Lexer<H> where H: Handler {
 
         if self.wait_token.len() > 0 {
             println!("error!!!!!!!!!!!!!! = {:?}", self.wait_token);
+            return Err(AstError::new_no_match_close_error(self.wait_token.pop().unwrap()));
         }
         println!("self.tokenstack = {:?}", self.tokenstack);
+        Ok(())
     }
 }

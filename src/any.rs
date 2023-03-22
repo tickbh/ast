@@ -4,7 +4,7 @@ use std::ops::{Add, Sub};
 
 
 #[derive(Clone, Debug)]
-pub enum LangAny {
+pub enum AstAny {
     Bool(bool),
     U8(u8),
     I8(i8),
@@ -27,121 +27,121 @@ pub enum LangAny {
     Unknow,
 }
 
-impl Add for &LangAny {
-    type Output = LangAny;
+impl Add for &AstAny {
+    type Output = AstAny;
 
-    fn add(self, other: Self) -> LangAny {
+    fn add(self, other: Self) -> AstAny {
         match (self, other) {
-            (LangAny::Bool(a), LangAny::Bool(b)) => {
-                LangAny::Bool(*a && *b)
+            (AstAny::Bool(a), AstAny::Bool(b)) => {
+                AstAny::Bool(*a && *b)
             },
-            (LangAny::U8(a), LangAny::U8(b)) => {
-                LangAny::U8(a.overflowing_add(*b).0)
+            (AstAny::U8(a), AstAny::U8(b)) => {
+                AstAny::U8(a.overflowing_add(*b).0)
             },
-            (LangAny::I8(a), LangAny::I8(b)) => {
-                LangAny::I8(a.overflowing_add(*b).0)
+            (AstAny::I8(a), AstAny::I8(b)) => {
+                AstAny::I8(a.overflowing_add(*b).0)
             },
-            (LangAny::U16(a), LangAny::U16(b)) => {
-                LangAny::U16(a.overflowing_add(*b).0)
+            (AstAny::U16(a), AstAny::U16(b)) => {
+                AstAny::U16(a.overflowing_add(*b).0)
             },
-            (LangAny::I16(a), LangAny::I16(b)) => {
-                LangAny::I16(a.overflowing_add(*b).0)
+            (AstAny::I16(a), AstAny::I16(b)) => {
+                AstAny::I16(a.overflowing_add(*b).0)
             },
-            (LangAny::U32(a), LangAny::U32(b)) => {
-                LangAny::U32(a.overflowing_add(*b).0)
+            (AstAny::U32(a), AstAny::U32(b)) => {
+                AstAny::U32(a.overflowing_add(*b).0)
             },
-            (LangAny::I32(a), LangAny::I32(b)) => {
-                LangAny::I32(a.overflowing_add(*b).0)
+            (AstAny::I32(a), AstAny::I32(b)) => {
+                AstAny::I32(a.overflowing_add(*b).0)
             },
-            (LangAny::U64(a), LangAny::U64(b)) => {
-                LangAny::U64(a.overflowing_add(*b).0)
+            (AstAny::U64(a), AstAny::U64(b)) => {
+                AstAny::U64(a.overflowing_add(*b).0)
             },
-            (LangAny::I64(a), LangAny::I64(b)) => {
-                LangAny::I64(a.overflowing_add(*b).0)
+            (AstAny::I64(a), AstAny::I64(b)) => {
+                AstAny::I64(a.overflowing_add(*b).0)
             },
-            (LangAny::U128(a), LangAny::U128(b)) => {
-                LangAny::U128(a.overflowing_add(*b).0)
+            (AstAny::U128(a), AstAny::U128(b)) => {
+                AstAny::U128(a.overflowing_add(*b).0)
             },
-            (LangAny::I128(a), LangAny::I128(b)) => {
-                LangAny::I128(a.overflowing_add(*b).0)
+            (AstAny::I128(a), AstAny::I128(b)) => {
+                AstAny::I128(a.overflowing_add(*b).0)
             },
-            (LangAny::Usize(a), LangAny::Usize(b)) => {
-                LangAny::Usize(a.overflowing_add(*b).0)
+            (AstAny::Usize(a), AstAny::Usize(b)) => {
+                AstAny::Usize(a.overflowing_add(*b).0)
             },
-            (LangAny::Isize(a), LangAny::Isize(b)) => {
-                LangAny::Isize(a.overflowing_add(*b).0)
+            (AstAny::Isize(a), AstAny::Isize(b)) => {
+                AstAny::Isize(a.overflowing_add(*b).0)
             },
-            (LangAny::F32(a), LangAny::F32(b)) => {
-                LangAny::F32(a + b)
+            (AstAny::F32(a), AstAny::F32(b)) => {
+                AstAny::F32(a + b)
             },
-            (LangAny::F64(a), LangAny::F64(b)) => {
-                LangAny::F64(a + b)
+            (AstAny::F64(a), AstAny::F64(b)) => {
+                AstAny::F64(a + b)
             },
-            (LangAny::Str(a), LangAny::Str(b)) => {
-                LangAny::Str(a.to_owned() + b)
+            (AstAny::Str(a), AstAny::Str(b)) => {
+                AstAny::Str(a.to_owned() + b)
             },
             _ => {
-                LangAny::Unsport
+                AstAny::Unsport
             }
         }
     }
 }
 
-impl Sub for &LangAny {
-    type Output = LangAny;
+impl Sub for &AstAny {
+    type Output = AstAny;
 
-    fn sub(self, other: Self) -> LangAny {
+    fn sub(self, other: Self) -> AstAny {
         match (self, other) {
-            (LangAny::Bool(a), LangAny::Bool(b)) => {
-                LangAny::Bool(*a && *b)
+            (AstAny::Bool(a), AstAny::Bool(b)) => {
+                AstAny::Bool(*a && *b)
             },
-            (LangAny::U8(a), LangAny::U8(b)) => {
-                LangAny::U8(a.overflowing_add(*b).0)
+            (AstAny::U8(a), AstAny::U8(b)) => {
+                AstAny::U8(a.overflowing_add(*b).0)
             },
-            (LangAny::I8(a), LangAny::I8(b)) => {
-                LangAny::I8(a.overflowing_add(*b).0)
+            (AstAny::I8(a), AstAny::I8(b)) => {
+                AstAny::I8(a.overflowing_add(*b).0)
             },
-            (LangAny::U16(a), LangAny::U16(b)) => {
-                LangAny::U16(a.overflowing_add(*b).0)
+            (AstAny::U16(a), AstAny::U16(b)) => {
+                AstAny::U16(a.overflowing_add(*b).0)
             },
-            (LangAny::I16(a), LangAny::I16(b)) => {
-                LangAny::I16(a.overflowing_add(*b).0)
+            (AstAny::I16(a), AstAny::I16(b)) => {
+                AstAny::I16(a.overflowing_add(*b).0)
             },
-            (LangAny::U32(a), LangAny::U32(b)) => {
-                LangAny::U32(a.overflowing_add(*b).0)
+            (AstAny::U32(a), AstAny::U32(b)) => {
+                AstAny::U32(a.overflowing_add(*b).0)
             },
-            (LangAny::I32(a), LangAny::I32(b)) => {
-                LangAny::I32(a.overflowing_add(*b).0)
+            (AstAny::I32(a), AstAny::I32(b)) => {
+                AstAny::I32(a.overflowing_add(*b).0)
             },
-            (LangAny::U64(a), LangAny::U64(b)) => {
-                LangAny::U64(a.overflowing_add(*b).0)
+            (AstAny::U64(a), AstAny::U64(b)) => {
+                AstAny::U64(a.overflowing_add(*b).0)
             },
-            (LangAny::I64(a), LangAny::I64(b)) => {
-                LangAny::I64(a.overflowing_add(*b).0)
+            (AstAny::I64(a), AstAny::I64(b)) => {
+                AstAny::I64(a.overflowing_add(*b).0)
             },
-            (LangAny::U128(a), LangAny::U128(b)) => {
-                LangAny::U128(a.overflowing_add(*b).0)
+            (AstAny::U128(a), AstAny::U128(b)) => {
+                AstAny::U128(a.overflowing_add(*b).0)
             },
-            (LangAny::I128(a), LangAny::I128(b)) => {
-                LangAny::I128(a.overflowing_add(*b).0)
+            (AstAny::I128(a), AstAny::I128(b)) => {
+                AstAny::I128(a.overflowing_add(*b).0)
             },
-            (LangAny::Usize(a), LangAny::Usize(b)) => {
-                LangAny::Usize(a.overflowing_add(*b).0)
+            (AstAny::Usize(a), AstAny::Usize(b)) => {
+                AstAny::Usize(a.overflowing_add(*b).0)
             },
-            (LangAny::Isize(a), LangAny::Isize(b)) => {
-                LangAny::Isize(a.overflowing_add(*b).0)
+            (AstAny::Isize(a), AstAny::Isize(b)) => {
+                AstAny::Isize(a.overflowing_add(*b).0)
             },
-            (LangAny::F32(a), LangAny::F32(b)) => {
-                LangAny::F32(a + b)
+            (AstAny::F32(a), AstAny::F32(b)) => {
+                AstAny::F32(a + b)
             },
-            (LangAny::F64(a), LangAny::F64(b)) => {
-                LangAny::F64(a + b)
+            (AstAny::F64(a), AstAny::F64(b)) => {
+                AstAny::F64(a + b)
             },
-            (LangAny::Str(a), LangAny::Str(b)) => {
-                LangAny::Str(a.to_owned() + b)
+            (AstAny::Str(a), AstAny::Str(b)) => {
+                AstAny::Str(a.to_owned() + b)
             },
             _ => {
-                LangAny::Unsport
+                AstAny::Unsport
             }
         }
     }

@@ -1,4 +1,4 @@
-use std::{ops::BitAnd, sync::Arc, collections::HashMap};
+use std::{ops::BitAnd, sync::Arc, collections::HashMap, vec};
 use regex::Regex;
 use std::fmt::Debug;
 
@@ -29,6 +29,21 @@ impl LexToken {
 
     pub fn clone_base_token(&self) -> LexToken {
         LexToken { ty: self.ty, data: self.data.clone(), lineno: self.lineno, start: self.start, end: self.end, subs: vec![], value: AstAny::Unknow }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct LexPrec {
+    pub ty: &'static str,
+    pub left: bool,
+    pub precs: Vec<&'static str>,
+}
+
+impl LexPrec {
+    pub fn new(ty: &'static str, left: bool, precs: Vec<&'static str>) -> Self {
+        LexPrec {
+            ty, left, precs
+        }
     }
 }
 
@@ -72,6 +87,8 @@ where H: Handler {
     pub ignore: &'static str,
     pub literals: &'static str,
     pub hash_matchs: HashMap<(&'static str, &'static str), &'static str>,
+    pub precs: Vec<LexPrec>,
+    prec_hash: HashMap<(&'static str, &'static str), (bool, i32)>,
 }
 
 // impl Default for Lexer<DefaultHandler> {
@@ -97,7 +114,7 @@ where H: Handler {
 
 impl<H> Lexer<H> where H: Handler {
     pub fn new(data: String, handler: H) -> Lexer<H> {
-        Lexer {
+        let mut lex = Lexer {
             res: vec![],
             data: Arc::new(data),
             tokenstack: vec![],
@@ -112,9 +129,26 @@ impl<H> Lexer<H> where H: Handler {
                 (("lit", "{"), "}"),
                 (("lit", "["), "]"),
             ]),
-        }
+            precs: vec![
+                LexPrec::new("lit", true, vec!["+", "-"]),
+                LexPrec::new("lit", true, vec!["*", "/"]),
+                LexPrec::new("lit", false, vec!["-"]),
+            ],
+            prec_hash: HashMap::new(),
+        };
+        lex.do_analyse_prec();
+        lex
+    }
 
-        // Lexer {  len: data.len(), data: Arc::new(data), handler, ..Default::default() }
+    fn do_analyse_prec(&mut self) {
+        let mut hash = HashMap::new();
+        for idx in 0..self.precs.len() {
+            let value = &self.precs[idx];
+            for p in &value.precs {
+                hash.insert((value.ty, *p), (value.left, idx as i32));
+            }
+        }
+        self.prec_hash = hash;
     }
 
     pub fn add_regex(&mut self, ty: &'static str, re: Regex) {
@@ -172,7 +206,7 @@ impl<H> Lexer<H> where H: Handler {
                 continue;
             }
 
-            if let Some(lpos) = self.literals.find(val) {
+            if let Some(_lpos) = self.literals.find(val) {
                 self.pos = pos.unwrap();
                 return Some(LexToken {
                     ty: "lit",
@@ -208,12 +242,12 @@ impl<H> Lexer<H> where H: Handler {
         }
     }
 
-    pub fn read_token(&mut self, token: &mut LexToken) -> AstResult<()> {
-        token.value = self.handler.on_read(token)?;
+    pub fn read_token(handler: &mut H, token: &mut LexToken) -> AstResult<()> {
+        token.value = handler.on_read(token)?;
         Ok(())
     }
 
-    pub fn parser(&mut self) -> AstResult<()> {
+    pub fn parser_token(&mut self) -> AstResult<()> {
         self.tokenstack = vec![];
         while let Some(mut token) = self.get_token() {
             println!("token = {:?}", self.hash_matchs);
@@ -221,7 +255,6 @@ impl<H> Lexer<H> where H: Handler {
             println!("token = {:?} 11 = {} match = {}", token, token.ty == "id", token.get_value());
 
             // println!("token = {:?} match = {}", token, token.ty == "id" && self.hash_matchs.contains_key(token.get_value()));
-            self.read_token(&mut token)?;
             if self.hash_matchs.contains_key(&(token.ty, token.get_value())) {
                 self.wait_token.push(token.clone_base_token());
             } else {
@@ -255,5 +288,28 @@ impl<H> Lexer<H> where H: Handler {
         }
         println!("self.tokenstack = {:?}", self.tokenstack);
         Ok(())
+    }
+
+    pub fn iter_read_token(&mut self, mut token: LexToken) -> AstResult<()> {
+        println!("read token = {:?}", token);
+        // token.subs
+        token.value = self.handler.on_read(&mut token)?;
+        Ok(())
+    }
+
+    pub fn eval(&mut self) -> AstResult<AstAny> {
+        if self.tokenstack.len() == 0 {
+            self.parser_token()?;
+        }
+
+        let mut temp: Vec<_> = self.tokenstack.drain(..).collect();
+        for token in temp.drain(..) {
+            self.iter_read_token(token);
+            // token.value = self.handler.on_read(&mut token)?;
+            // Self::read_token(&mut self.handler, token)?;
+        }
+
+        Ok(AstAny::Unknow)
+
     }
 }

@@ -19,60 +19,6 @@ impl Handler for CalcHandler {
     }
 }
 fn main() {
-    // let value = "\"1+1\"我是中".to_string();
-    // println!("string size = {}", value.len());
-
-    // let value = "right11=22".to_string();
-
-    // let rex = Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap();
-    // match rex.find_at(&value, 0) {
-    //     Some(pos) => {
-    //         println!("text = {:?}", value.get(0..pos.end()));
-    //     }
-    //     None => {
-
-    //     }
-    // } ;
-    // let a = "\"([^\\\n]|(\\.))*?\"";
-
-    // let value = "\"righ\\\"t11=\"22".to_string();
-    // let rex = Regex::new(r#""([^\\\n]|(\\.))*?""#).unwrap();
-    // match rex.find_at(&value, 0) {
-    //     Some(pos) => {
-    //         println!("text = {:?}", value.get(0..pos.end()));
-    //     }
-    //     None => {
-    //         println!("not found string");
-    //     }
-    // } ;
-
-    // let value = r###"""" aaa fdsafdsa  """"###.to_string();
-    // let value = "\"\"\"aaa   
-    // fdsafdsa  \"\"\"".to_string();
-    // println!("aaaavalues = {:?}!!!!!!!", value.as_bytes());
-    // let rex = Regex::new(r#""""([^\n]|[^\r]|(\.))*?""""#).unwrap();
-    // match rex.find_at(&value, 0) {
-    //     Some(pos) => {
-    //         println!("text = {:?} end = {}", value.get(0..pos.end()), pos.end());
-    //     }
-    //     None => {
-
-    //         println!("not found string");
-    //     }
-    // } ;
-
-
-    // let value = "22887798989798789789789uL".to_string();
-    // let rex = Regex::new(r#"\d+([uU]|[lL]|[uU][lL]|[lL][uU])?"#).unwrap();
-    // match rex.find_at(&value, 0) {
-    //     Some(pos) => {
-    //         println!("text = {:?}", value.get(0..pos.end()));
-    //     }
-    //     None => {
-    //         println!("not found string");
-    //     }
-    // } ;
-    // return;
 // t_STRING = r'\"([^\\\n]|(\\.))*?\"'
 // # Identifiers
 // t_ID = r'[A-Za-z_][A-Za-z0-9_]*'
@@ -88,7 +34,7 @@ fn main() {
     let value = "right11=2211;\n
     
     aaass=222uiii".to_string();
-    let value = "1 + (-1+(2+3))*3".to_string();
+    let value = "1 + 2*-3".to_string();
     // let value = "function xx() end".to_string();
     let xx = Regex::new(r"[A-Za-z_][A-Za-z0-9_]*").unwrap();
     println!("======={:?}", xx.shortest_match_at(&value, 5));
@@ -104,6 +50,6 @@ fn main() {
     lex.add_regex("line", Regex::new(r"\n").unwrap());
     lex.add_regex("num", Regex::new(r"\d+([uU]|[lL]|[uU][lL]|[lL][uU])?").unwrap());
 
-    let result = lex.parser();
+    let result = lex.eval();
     println!("Hello, world! {:?}", result);
 }

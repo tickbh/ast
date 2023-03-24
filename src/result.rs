@@ -67,9 +67,9 @@ impl From<num::ParseFloatError> for AstError {
 impl fmt::Debug for AstError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.details.len() > 0 {
-            write!(f, "WS Error <{:?}>: {}", self.kind, self.details)
+            write!(f, "AST Error <{:?}>: {}", self.kind, self.details)
         } else {
-            write!(f, "WS Error <{:?}>", self.kind)
+            write!(f, "AST Error <{:?}>", self.kind)
         }
     }
 }
